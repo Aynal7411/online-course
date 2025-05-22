@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<h2>{{ course.title }}</h2>
+
+<!-- Progress Bar Container -->
+<div id="progress-bar-container" style="width: 100%; background-color: #ddd; height: 20px; margin-bottom: 20px;">
+  <div id="progress-bar" style="width: 0%; background-color: green; height: 100%; transition: width 0.5s;"></div>
+</div>
+
+<!-- Lessons List -->
+<ul>
+  {% for lesson in course.lessons.all %}
+    <li>
+      {{ lesson.title }}
+      {% if lesson.id in completed_lessons %}
+        ✅ Completed
+      {% else %}
+        <button onclick="markCompleted({{ lesson.id }})" class="btn btn-sm btn-outline-success">Mark as Completed</button>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>
+
+<!-- Certificate Download -->
+{% if course.lessons.count == completed_lessons|length %}
+  <a href="{% url 'generate_certificate' course.id %}" class="btn btn-success mt-3">🎓 Download Certificate</a>
+{% else %}
+  <button class="btn btn-secondary mt-3" disabled>Complete Course to Download Certificate</button>
+{% endif %}
+
+<!-- Mark Completed Script -->
+<script>
+function markCompleted(lessonId) {
+    fetch('/mark-completed/' + lessonId + '/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.status === 'success') {
+            location.reload();
+        }
+    });
+}
+</script>
+
+<!-- Progress Bar Update Script -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const completed = parseInt("{{ completed_lessons|length|default:0 }}");
+    const total = parseInt("{{ course.lessons.count|default:0 }}");
+
+    if (total > 0) {
+        const percent = Math.round((completed / total) * 100);
+        const progressBar = document.getElementById('progress-bar');
+        if (progressBar) {
+            progressBar.style.width = percent + '%';
+        }
+    }
+});
+</script>
+{% endblock %}
